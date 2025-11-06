@@ -1,14 +1,14 @@
 // Car Rental System - Main JavaScript
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-hide alerts after 5 seconds
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(alert => {
-        setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 5000);
-    });
+// document.addEventListener('DOMContentLoaded', function() {
+//     // Auto-hide alerts after 5 seconds
+//     const alerts = document.querySelectorAll('.alert');
+//     alerts.forEach(alert => {
+//         setTimeout(() => {
+//             const bsAlert = new bootstrap.Alert(alert);
+//             bsAlert.close();
+//         }, 5000);
+//     });
 
     // Date input validation
     const startDateInput = document.querySelector('input[name="start_date"]');
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
     popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl);
     });
-});
+
 
 // Format currency
 function formatCurrency(amount) {
