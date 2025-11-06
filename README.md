@@ -67,7 +67,7 @@ This project allows users to browse and book cars online while providing admins 
 
 📧 Email: your email address
 
-![User Dashboard](/car_rental_app/static/images/users-dashboard.png)
+![User Dashboard](/static/img/user-dashboard.png)
 
 ## 🧑‍💻 Admin-dashboard
 #### Phalla Suong
@@ -78,5 +78,3 @@ This project allows users to browse and book cars online while providing admins 
 
 ![Admin Dashboard](/static/img/admin-dashboard.png)
 
-## About Us page
-![about us page](/static/img/about-us.png)
