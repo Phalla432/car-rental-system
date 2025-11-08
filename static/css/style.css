@@ -57,27 +57,44 @@ main {
 /* Car Cards */
 .car-card {
     transition: all 0.3s ease;
-    border: 1px solid #dee2e6;
+    border: none;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 }
 
 .car-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 12px 24px rgba(13, 110, 253, 0.15);
 }
 
 .car-card img {
     height: 200px;
     object-fit: cover;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    background: #f8f9fa;
 }
 
 .car-card .card-title {
     font-weight: 600;
     color: var(--dark-color);
+    margin-bottom: 0.5rem;
 }
 
 .car-details {
     font-size: 0.9rem;
     color: var(--secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.car-details i {
+    color: var(--primary-color);
+    width: 1.2em;
+    text-align: center;
 }
 
 /* Navigation */
@@ -275,10 +292,13 @@ footer a:hover {
     background-color: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(0,0,0,0.05);
 }
 
 .car-specs i {
     margin-right: 8px;
+    color: var(--primary-color);
 }
 
 /* Booking Form */
@@ -287,6 +307,43 @@ footer a:hover {
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Detail image sizing */
+.car-detail-img {
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background: #f8f9fa;
+}
+
+/* Price display */
+.car-price {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+}
+
+.car-price small {
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+    margin-left: 0.5rem;
+    font-weight: normal;
+}
+
+/* Category badge */
+.badge {
+    font-size: 0.875rem;
+    padding: 0.5em 1em;
+    border-radius: 50rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Print Styles */

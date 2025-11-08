@@ -10,6 +10,9 @@ import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
+# Make upload folder absolute so files are saved inside the app's static directory
+# This avoids issues when the working directory is different from the project root.
+app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, app.config.get('UPLOAD_FOLDER', 'static/uploads/cars'))
 
 # Initialize extensions
 db.init_app(app)
@@ -22,8 +25,69 @@ login_manager.login_message = 'Please log in to access this page.'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Create upload folder if it doesn't exist
+# Create upload folder if it doesn't exist (absolute path)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+
+# Template helper: sanitize image filename stored in DB (strip paths/backslashes)
+@app.template_filter('image_filename')
+def image_filename_filter(value):
+    """Return a safe basename for image URLs. If value is falsy, return default filename."""
+    if not value:
+        return 'default-car.jpg'
+    # os.path.basename handles both forward and back slashes
+    return os.path.basename(value)
+
+
+# Template filter to return the best URL for a car image
+@app.template_filter('car_image')
+def car_image_filter(car):
+    """Return a static URL string for the car's image.
+
+    Priority:
+    1. Uploaded image in static/uploads/cars/<filename>
+    2. Branded image in static/img/<brand>-<model>.png or static/img/<brand>.png
+    3. Default image static/img/default-car.jpg
+    """
+    # car may be a filename string if called differently - handle both
+    try:
+        brand = getattr(car, 'brand', None)
+        model = getattr(car, 'model', None)
+        image_value = getattr(car, 'image_url', None) if hasattr(car, 'image_url') else car
+    except Exception:
+        brand = None
+        model = None
+        image_value = car
+
+    filename = image_filename_filter(image_value)
+
+    # 1) check uploads folder
+    uploads_rel = os.path.join('uploads', 'cars', filename)
+    uploads_abs = os.path.join(app.root_path, 'static', uploads_rel)
+    if filename and os.path.exists(uploads_abs):
+        return url_for('static', filename=uploads_rel)
+
+    # 2) check branded images under static/img
+    def slugify(s):
+        return ''.join(c if c.isalnum() else '-' for c in (s or '').strip().lower()).strip('-')
+
+    candidates = []
+    if brand and model:
+        candidates.append(f"{slugify(brand)}-{slugify(model)}.png")
+        candidates.append(f"{slugify(brand)}-{slugify(model)}.jpg")
+        candidates.append(f"{slugify(brand)}-{slugify(model)}.svg")
+    if brand:
+        candidates.append(f"{slugify(brand)}.png")
+        candidates.append(f"{slugify(brand)}.jpg")
+        candidates.append(f"{slugify(brand)}.svg")
+
+    for cand in candidates:
+        cand_abs = os.path.join(app.root_path, 'static', 'img', cand)
+        if os.path.exists(cand_abs):
+            return url_for('static', filename=f'img/{cand}')
+
+    # 3) fallback to default
+    return url_for('static', filename='img/default-car.jpg')
 
 # Helper functions
 def allowed_file(filename):

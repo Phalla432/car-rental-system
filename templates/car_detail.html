@@ -14,9 +14,7 @@
 
     <div class="row">
         <div class="col-md-6">
-            <img src="{{ url_for('static', filename='uploads/cars/' + car.image_url) }}" 
-                 class="img-fluid rounded shadow" alt="{{ car.brand }} {{ car.model }}"
-                 onerror="this.src='{{ url_for('static', filename='img/default-car.jpg') }}'">
+            <img src="{{ car|car_image }}" class="img-fluid rounded shadow car-detail-img" alt="{{ car.brand }} {{ car.model }}" loading="lazy">
         </div>
         <div class="col-md-6">
             <span class="badge bg-primary mb-2">{{ car.category }}</span>

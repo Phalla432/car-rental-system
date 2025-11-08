@@ -45,9 +45,7 @@
             {% for car in cars.items %}
             <div class="col-md-4 mb-4">
                 <div class="card car-card h-100">
-                    <img src="/static/img/toyota-camry.png" 
-                         class="card-img-top" alt="{{ car.brand }} {{ car.model }}"
-                         onerror="this.src='{{ url_for('static', filename='img/default-car.jpg') }}'">
+                    <img src="{{ car|car_image }}" class="card-img-top" alt="{{ car.brand }} {{ car.model }}" loading="lazy">
                     <div class="card-body">
                         <span class="badge bg-primary mb-2">{{ car.category }}</span>
                         {% if not car.is_available %}
