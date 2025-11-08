@@ -32,9 +32,7 @@
                         {% for car in cars.items %}
                         <tr>
                             <td>
-                                <img src="{{ url_for('static', filename='uploads/cars/' + car.image_url) }}"
-                                    alt="{{ car.brand }}" class="img-thumbnail" style="width: 80px;"
-                                    onerror="this.src='{{ url_for('static', filename='img/default-car.jpg') }}'">
+                                <img src="{{ car|car_image }}" alt="{{ car.brand }}" class="img-thumbnail" style="width: 80px;" loading="lazy">
                             </td>
                             <td>
                                 <strong>{{ car.brand }} {{ car.model }}</strong><br>

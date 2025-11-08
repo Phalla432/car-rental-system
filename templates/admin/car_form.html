@@ -105,8 +105,13 @@
                         <div class="mb-3">
                             {{ form.image.label(class="form-label") }}
                             {{ form.image(class="form-control") }}
-                            {% if car and car.image_url %}
-                            <small class="text-muted">Current image: {{ car.image_url }}</small>
+                            {% if car and (car.image_url or car.brand) %}
+                            <div class="mt-2">
+                                <small class="text-muted">Current image preview:</small>
+                                <div class="mt-1">
+                                    <img src="{{ car|car_image }}" alt="{{ car.brand }} {{ car.model }}" class="img-thumbnail" style="width:160px;" loading="lazy">
+                                </div>
+                            </div>
                             {% endif %}
                         </div>
 
