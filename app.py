@@ -107,8 +107,8 @@ def save_car_image(image_file):
 # Routes
 @app.route('/')
 def index():
-    """Home page with featured cars"""
-    featured_cars = Car.query.filter_by(is_available=True).limit(6).all()
+    """Home page with featured cars - shows both available and unavailable cars"""
+    featured_cars = Car.query.order_by(Car.created_at.desc()).limit(6).all()
     return render_template('index.html', cars=featured_cars)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -170,9 +170,10 @@ def cars():
     category = request.args.get('category', '')
     min_price = request.args.get('min_price', type=float)
     max_price = request.args.get('max_price', type=float)
+    show_all = request.args.get('show_all', '').lower() == 'true'
     
-    # Base query
-    cars_query = Car.query.filter_by(is_available=True)
+    # Base query - show all cars or just available ones
+    cars_query = Car.query if show_all else Car.query.filter_by(is_available=True)
     
     # Apply filters
     if query:
@@ -297,9 +298,30 @@ def cancel_booking(booking_id):
         flash('Booking is already cancelled.', 'info')
         return redirect(url_for('my_bookings'))
     
-    booking.status = 'cancelled'
-    db.session.commit()
-    flash('Booking cancelled successfully.', 'success')
+    try:
+        # If this was an approved booking, mark the car as available again and handle booking cancellation
+        if booking.status == 'approved':
+            car = Car.query.get(booking.car_id)
+            if car:
+                # Reset car availability when cancelling approved booking
+                car.is_available = True
+                # Update booking status and commit together to maintain consistency
+                booking.status = 'cancelled'
+                db.session.commit()
+                flash('Booking cancelled successfully and car marked as available.', 'success')
+            else:
+                flash('Error: Car not found.', 'danger')
+                return redirect(url_for('my_bookings' if not current_user.is_admin else 'admin_bookings'))
+        else:
+            # For non-approved bookings, just update the status
+            booking.status = 'cancelled'
+            db.session.commit()
+            flash('Booking cancelled successfully.', 'success')
+            
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('Error cancelling booking')
+        flash(f'Error cancelling booking: {str(e)}. Please try again.', 'danger')
     
     if current_user.is_admin:
         return redirect(url_for('admin_bookings'))
@@ -361,6 +383,12 @@ def admin_add_car():
     
     form = CarForm()
     if form.validate_on_submit():
+        # Check license plate uniqueness first
+        existing = Car.query.filter_by(license_plate=form.license_plate.data).first()
+        if existing:
+            flash('A car with this license plate already exists. Please use a different license plate.', 'danger')
+            return render_template('admin/car_form.html', form=form, title='Add Car')
+
         # Handle image upload
         image_filename = 'default-car.jpg'
         if form.image.data:
@@ -384,7 +412,14 @@ def admin_add_car():
         )
         
         db.session.add(car)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Error adding car')
+            flash('Unable to add car. Please check the details and try again.', 'danger')
+            return render_template('admin/car_form.html', form=form, title='Add Car')
+
         flash('Car added successfully!', 'success')
         return redirect(url_for('admin_cars'))
     
@@ -402,6 +437,13 @@ def admin_edit_car(car_id):
     form = CarForm(obj=car)
     
     if form.validate_on_submit():
+        # Check license plate uniqueness (exclude current car)
+        if form.license_plate.data != car.license_plate:
+            other = Car.query.filter_by(license_plate=form.license_plate.data).first()
+            if other and other.id != car.id:
+                flash('Another car with this license plate already exists.', 'danger')
+                return render_template('admin/car_form.html', form=form, title='Edit Car', car=car)
+
         car.brand = form.brand.data
         car.model = form.model.data
         car.category = form.category.data
@@ -420,7 +462,14 @@ def admin_edit_car(car_id):
             if saved_file:
                 car.image_url = saved_file
         
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Error updating car')
+            flash('Unable to update car. Please check the details and try again.', 'danger')
+            return render_template('admin/car_form.html', form=form, title='Edit Car', car=car)
+
         flash('Car updated successfully!', 'success')
         return redirect(url_for('admin_cars'))
     
@@ -478,9 +527,42 @@ def admin_approve_booking(booking_id):
         return redirect(url_for('index'))
     
     booking = Booking.query.get_or_404(booking_id)
-    booking.status = 'approved'
-    db.session.commit()
-    flash('Booking approved!', 'success')
+    car = Car.query.get_or_404(booking.car_id)
+    
+    # Check if car is already unavailable
+    if not car.is_available and booking.status != 'approved':
+        flash('Car is no longer available. Cannot approve booking.', 'danger')
+        return redirect(url_for('admin_bookings'))
+    
+    # Check for date conflicts with other approved bookings
+    conflicting_bookings = Booking.query.filter(
+        and_(
+            Booking.car_id == car.id,
+            Booking.id != booking.id,  # Exclude current booking
+            Booking.status == 'approved',
+            or_(
+                and_(Booking.start_date <= booking.start_date, Booking.end_date >= booking.start_date),
+                and_(Booking.start_date <= booking.end_date, Booking.end_date >= booking.end_date),
+                and_(Booking.start_date >= booking.start_date, Booking.end_date <= booking.end_date)
+            )
+        )
+    ).first()
+    
+    if conflicting_bookings:
+        flash('Cannot approve booking: Date conflict with another approved booking.', 'danger')
+        return redirect(url_for('admin_bookings'))
+    
+    try:
+        # Mark booking as approved and car as unavailable
+        booking.status = 'approved'
+        car.is_available = False
+        db.session.commit()
+        flash('Booking approved and car marked as unavailable!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('Error approving booking')
+        flash(f'Error approving booking: {str(e)}. Please try again.', 'danger')
+    
     return redirect(url_for('admin_bookings'))
 
 @app.route('/admin/customers')
